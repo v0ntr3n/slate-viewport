@@ -581,7 +581,7 @@ void AppendClosingFrame(cocos2d::extension::CCMovementBoneData* movBoneData) {
 
     auto* closingFrame = new cocos2d::extension::CCFrameData();
     closingFrame->copy(lastFrame);
-    closingFrame->frameID = movBoneData->duration;
+    closingFrame->frameID = static_cast<int>(movBoneData->duration);
     movBoneData->addFrameData(closingFrame);
     closingFrame->release();
 }
@@ -1161,8 +1161,8 @@ bool XmlbArmatureLoader::AddDataFromArmatureRoot(const ArmatureRoot& root,
                     }
 
                     cumulativeDuration += frameData->duration;
-                    movBoneData->duration =
-                        std::max(cumulativeDuration, frameData->frameID + frameData->duration);
+                    movBoneData->duration = static_cast<float>(
+                        (std::max)(cumulativeDuration, frameData->frameID + frameData->duration));
                     movBoneData->addFrameData(frameData);
                     frameData->release();
                 }
@@ -1172,7 +1172,7 @@ bool XmlbArmatureLoader::AddDataFromArmatureRoot(const ArmatureRoot& root,
                     continue;
                 }
 
-                maxBoneDuration = std::max(maxBoneDuration, movBoneData->duration);
+                maxBoneDuration = (std::max)(maxBoneDuration, static_cast<int>(movBoneData->duration));
                 NormalizeMovementBoneSkew(movBoneData);
                 movData->addMovementBoneData(movBoneData);
                 movBoneData->release();
@@ -1471,7 +1471,7 @@ bool XmlbArmatureLoader::AddDataFromBitCache(const uint8_t* bitCacheData,
 
                     frameData->frameID = cumulativeFrameId;
                     cumulativeFrameId += frameData->duration;
-                    movBoneData->duration = cumulativeFrameId;
+                    movBoneData->duration = static_cast<float>(cumulativeFrameId);
 
                     movBoneData->addFrameData(frameData);
                     frameData->release();
@@ -1484,7 +1484,7 @@ bool XmlbArmatureLoader::AddDataFromBitCache(const uint8_t* bitCacheData,
 
                 NormalizeMovementBoneSkew(movBoneData);
                 AppendClosingFrame(movBoneData);
-                maxBoneDuration = std::max(maxBoneDuration, movBoneData->duration);
+                maxBoneDuration = (std::max)(maxBoneDuration, static_cast<int>(movBoneData->duration));
 
                 movData->addMovementBoneData(movBoneData);
                 movBoneData->release();
