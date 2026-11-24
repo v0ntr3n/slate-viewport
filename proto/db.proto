@@ -1,0 +1,112 @@
+syntax = "proto2";
+// Extracted from libcocos2dlua.so @ 0xa9c350 (1558 bytes)
+
+message ArmatureColor {
+  optional int32 r = 1;
+  optional int32 g = 2;
+  optional int32 b = 3;
+  optional int32 a = 4;
+}
+
+message ArmatureSkinData {
+  optional float x = 1;
+  optional float y = 2;
+  optional float cX = 3;
+  optional float cY = 4;
+  optional float kX = 5;
+  optional float kY = 6;
+}
+
+message ArmatureDisplayData {
+  optional string name = 1;
+  optional int32 displayType = 2;
+  optional string plist = 3;
+  repeated ArmatureSkinData skin_data = 4;
+}
+
+message ArmatureBoneData {
+  optional string name = 1;
+  optional string parent = 2;
+  optional float x = 3;
+  optional float y = 4;
+  optional float z = 5;
+  optional float cX = 6;
+  optional float cY = 7;
+  optional float kX = 8;
+  optional float kY = 9;
+  repeated ArmatureDisplayData display_data = 10;
+  optional ArmatureColor color = 11;
+}
+
+message ArmatureData {
+  optional float version = 1;
+  optional string name = 2;
+  repeated ArmatureBoneData bone_data = 3;
+}
+
+message ArmatureFrameData {
+  optional int32 dI = 1;
+  optional float x = 2;
+  optional float y = 3;
+  optional int32 z = 4;
+  optional float cX = 5;
+  optional float cY = 6;
+  optional float kX = 7;
+  optional float kY = 8;
+  optional int32 fi = 9;
+  optional int32 twE = 10;
+  optional bool tweenFrame = 11;
+  optional int32 bd = 12;
+  optional string evt = 13;
+  optional int32 dr = 14;
+  optional ArmatureColor color = 15;
+}
+
+message ArmatureMovBoneData {
+  optional string name = 1;
+  optional float dl = 2;
+  repeated ArmatureFrameData frame_data = 3;
+}
+
+message ArmatureMovData {
+  optional string name = 1;
+  optional int32 dr = 2;
+  optional bool lp = 3;
+  optional int32 to = 4;
+  optional int32 drTW = 5;
+  optional int32 twE = 6;
+  optional float sc = 7;
+  repeated ArmatureMovBoneData mov_bone_data = 8;
+}
+
+message ArmatureVertex {
+  optional float x = 1;
+  optional float y = 2;
+}
+
+message ArmatureContourData {
+  repeated ArmatureVertex vertex = 1;
+}
+
+message ArmatureTextureData {
+  optional string name = 1;
+  optional float width = 2;
+  optional float height = 3;
+  optional float pX = 4;
+  optional float pY = 5;
+  optional string plistFile = 6;
+  repeated ArmatureContourData contour_data = 7;
+}
+
+message ArmatureAnimationData {
+  optional string name = 1;
+  repeated ArmatureMovData mov_data = 2;
+}
+
+message ArmatureRoot {
+  optional float content_scale = 1;
+  repeated ArmatureData armature_data = 2;
+  repeated ArmatureAnimationData animation_data = 3;
+  repeated ArmatureTextureData texture_data = 4;
+  repeated string config_file_path = 5;
+}

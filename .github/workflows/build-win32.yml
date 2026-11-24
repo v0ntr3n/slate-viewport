@@ -1,0 +1,225 @@
+name: Build Win32 Client Win32 C++ Client
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  validate-and-proto:
+    name: Validate Tools & Proto2 Codegen
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Syntax-check offline tools
+        run: |
+          python3 -m py_compile tools/validate_resources.py
+          python3 -m py_compile tools/patch_cocos2dx.py
+
+      - name: Install protoc
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq protobuf-compiler
+
+      - name: Generate C++ from proto2 schemas
+        run: |
+          mkdir -p build/proto_gen
+          protoc --proto_path=proto --cpp_out=build/proto_gen proto/CSGUI.proto proto/CSScene.proto proto/db.proto
+          ls -la build/proto_gen
+
+  build-win32:
+    name: Build Win32 (x86) MSVC Release
+    needs: validate-and-proto
+    runs-on: windows-2022
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Init CI log capture
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path ci_logs | Out-Null
+          "" | Set-Content -Path ci_logs/last_step.txt
+          "" | Set-Content -Path ci_logs/error.log
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache Cocos2d-x 2.2.6 source & Win32 libs
+        id: cache-cocos
+        uses: actions/cache@v4
+        with:
+          path: external/cocos2d-x-2.2.6
+          key: cocos2dx-2.2.6-win32-v3-${{ hashFiles('tools/patch_cocos2dx.py') }}
+
+      - name: Fetch stock Cocos2d-x 2.2.6
+        if: steps.cache-cocos.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          "Fetch stock Cocos2d-x 2.2.6" | Set-Content ci_logs/last_step.txt
+          New-Item -ItemType Directory -Force -Path external | Out-Null
+          git clone --branch cocos2d-x-2.2.6 --depth 1 https://github.com/cocos2d/cocos2d-x.git external/cocos2d-x-2.2.6 2>&1 | Tee-Object -FilePath ci_logs/error.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git clone --branch v2-deps-4 --depth 1 https://github.com/cocos2d/cocos2d-x-3rd-party-libs-bin.git external/deps-tmp 2>&1 | Tee-Object -FilePath ci_logs/error.log -Append
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -c "import shutil; shutil.copytree('external/deps-tmp', 'external/cocos2d-x-2.2.6', dirs_exist_ok=True, ignore=shutil.ignore_patterns('.git'))" 2>&1 | Tee-Object -FilePath ci_logs/error.log -Append
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Remove-Item -Recurse -Force external\deps-tmp
+
+      - name: Patch Cocos2d-x 2.2.6 CCFileUtils with bt_decrypt hook
+        shell: pwsh
+        run: |
+          "Patch Cocos2d-x 2.2.6 CCFileUtils" | Set-Content ci_logs/last_step.txt
+          python tools/patch_cocos2dx.py external/cocos2d-x-2.2.6 2>&1 | Tee-Object -FilePath ci_logs/error.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build Cocos2d-x 2.2.6 Win32 libraries
+        if: steps.cache-cocos.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          "Build Cocos2d-x 2.2.6 Win32 libraries" | Set-Content ci_logs/last_step.txt
+          $vsDev = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars32.bat"
+          $outDir = "${{ github.workspace }}\external\cocos2d-x-2.2.6\Release.win32\\"
+          $projects = @(
+            "external\cocos2d-x-2.2.6\external\Box2D\proj.win32\Box2D.vcxproj",
+            "external\cocos2d-x-2.2.6\external\chipmunk\proj.win32\chipmunk.vcxproj",
+            "external\cocos2d-x-2.2.6\cocos2dx\proj.win32\cocos2d.vcxproj",
+            "external\cocos2d-x-2.2.6\CocosDenshion\proj.win32\CocosDenshion.vcxproj",
+            "external\cocos2d-x-2.2.6\extensions\proj.win32\libExtensions.vcxproj",
+            "external\cocos2d-x-2.2.6\scripting\lua\proj.win32\liblua.vcxproj"
+          )
+          foreach ($proj in $projects) {
+            Write-Host "=== Building $proj ==="
+            cmd /c "`"$vsDev`" && msbuild `"$proj`" /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v143 /p:WindowsTargetPlatformVersion=10.0 /p:OutDir=`"$outDir`" /m /v:minimal" 2>&1 | Tee-Object -FilePath ci_logs/error.log
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: Cache vcpkg x86-windows packages
+        uses: actions/cache@v4
+        with:
+          path: C:/vcpkg/installed
+          key: vcpkg-x86-win-v1-${{ hashFiles('CMakeLists.txt') }}
+
+      - name: Install Win32 x86 dependencies via vcpkg
+        shell: pwsh
+        run: |
+          "Install vcpkg dependencies" | Set-Content ci_logs/last_step.txt
+          $vcpkg = "$env:VCPKG_INSTALLATION_ROOT/vcpkg.exe"
+          & $vcpkg install sqlite3:x86-windows protobuf:x86-windows curl:x86-windows openssl:x86-windows zlib:x86-windows 2>&1 | Tee-Object -FilePath ci_logs/error.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Configure CMake (Visual Studio 2022 Win32)
+        shell: pwsh
+        run: |
+          "Configure CMake" | Set-Content ci_logs/last_step.txt
+          cmake -B build -G "Visual Studio 17 2022" -A Win32 `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x86-windows `
+            -DGCLIENT_COCOS2DX_ROOT="${{ github.workspace }}/external/cocos2d-x-2.2.6" `
+            -DGCLIENT_COCOS2DX_LIB_DIR="${{ github.workspace }}/external/cocos2d-x-2.2.6/Release.win32" 2>&1 | Tee-Object -FilePath ci_logs/error.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build GCLIENT.exe (Release)
+        shell: pwsh
+        run: |
+          "Build GCLIENT.exe" | Set-Content ci_logs/last_step.txt
+          cmake --build build --config Release --parallel 2>&1 | Tee-Object -FilePath ci_logs/error.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload Win32 build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: gclient-win32-release
+          path: |
+            build/Release/GCLIENT.exe
+            build/Release/*.dll
+            build/Release/*.pdb
+          if-no-files-found: warn
+
+      - name: Report CI Failure to GitHub Issue
+        if: failure() && github.event_name != 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const sha = context.sha.substring(0, 8);
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const stepName = fs.existsSync('ci_logs/last_step.txt')
+              ? fs.readFileSync('ci_logs/last_step.txt', 'utf8').trim()
+              : 'Unknown step';
+            let logTail = 'No log captured.';
+            if (fs.existsSync('ci_logs/error.log')) {
+              const lines = fs.readFileSync('ci_logs/error.log', 'utf8').split(/\r?\n/);
+              logTail = lines.slice(-120).join('\n').slice(-25000);
+            }
+
+            try {
+              await github.rest.issues.createLabel({ owner, repo, name: 'ci-failure', color: 'd73a4a', description: 'Automated CI build failure report' });
+            } catch (_) {}
+
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner, repo, labels: 'ci-failure', state: 'open'
+            });
+
+            const body = [
+              `### CI Build Failed`,
+              `- **Commit:** \`${sha}\``,
+              `- **Failing Step:** \`${stepName}\``,
+              `- **Workflow Run:** ${runUrl}`,
+              ``,
+              `<details open><summary>Error Log (last 120 lines)</summary>`,
+              ``,
+              '```text',
+              logTail,
+              '```',
+              `</details>`
+            ].join('\n');
+
+            if (openIssues.length > 0) {
+              const issueNumber = openIssues[0].number;
+              await github.rest.issues.createComment({ owner, repo, issue_number: issueNumber, body });
+              await github.rest.issues.update({
+                owner, repo, issue_number: issueNumber,
+                title: `[CI Failure] ${stepName} (${sha})`
+              });
+            } else {
+              await github.rest.issues.create({
+                owner, repo,
+                title: `[CI Failure] ${stepName} (${sha})`,
+                labels: ['ci-failure'],
+                body
+              });
+            }
+
+      - name: Auto-Close CI Failure Issue on Success
+        if: success() && github.event_name != 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const sha = context.sha.substring(0, 8);
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner, repo, labels: 'ci-failure', state: 'open'
+            });
+            for (const issue of openIssues) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issue.number,
+                body: `CI build passed on commit \`${sha}\` (${runUrl}). Auto-closing this issue.`
+              });
+              await github.rest.issues.update({
+                owner, repo, issue_number: issue.number,
+                state: 'closed', state_reason: 'completed'
+              });
+            }

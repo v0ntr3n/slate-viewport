@@ -1,0 +1,170 @@
+syntax = "proto2";
+// Extracted from libcocos2dlua.so @ 0xa9e7d8 (3270 bytes)
+
+message CSActionFrame {
+  optional int32 frameid = 1;
+  optional float positionx = 2;
+  optional float positiony = 3;
+  optional float scalex = 4;
+  optional float scaley = 5;
+  optional float rotation = 6;
+  optional int32 opacity = 7;
+  optional int32 colorr = 8;
+  optional int32 colorg = 9;
+  optional int32 colorb = 10;
+}
+
+message CSActionNode {
+  optional int32 ActionTag = 1;
+  repeated CSActionFrame actionframelist = 2;
+}
+
+message CSAction {
+  optional string name = 1;
+  optional bool loop = 2;
+  optional float unittime = 3;
+  repeated CSActionNode actionnodeList = 4;
+}
+
+message CSAnimation {
+  repeated CSAction actionList = 3;
+}
+
+message CSLayoutParameter {
+  optional int32 type = 1;
+  optional int32 gravity = 2;
+  optional string relativeName = 3;
+  optional string relativeToName = 4;
+  optional int32 align = 5;
+  optional float marginLeft = 6;
+  optional float marginRight = 7;
+  optional float marginTop = 8;
+  optional float marginDown = 9;
+}
+
+message CSData {
+  optional int32 resourceType = 1;
+  optional string path = 2;
+}
+
+message CSOptions {
+  optional int32 zOrder = 1;
+  optional bool ignoreSize = 2;
+  optional int32 sizeType = 3;
+  optional int32 positionType = 4;
+  optional float positionPercentX = 5;
+  optional float positionPercentY = 6;
+  optional float sizePercentX = 7;
+  optional float sizePercentY = 8;
+  optional int32 actiontag = 9;
+  optional int32 tag = 10;
+  optional bool touchAble = 11;
+  optional string name = 12;
+  optional CSLayoutParameter layoutParameter = 13;
+  optional int32 opacity = 14;
+  optional int32 colorB = 15;
+  optional int32 colorG = 16;
+  optional int32 colorR = 17;
+  optional float anchorPointX = 18;
+  optional float anchorPointY = 19;
+  optional bool flipX = 20;
+  optional bool flipY = 21;
+  optional float rotation = 22;
+  optional float scaleX = 23;
+  optional float scaleY = 24;
+  optional bool visible = 25;
+  optional int32 x = 26;
+  optional int32 y = 27;
+  optional bool scale9Enable = 28;
+  optional CSData normalData = 29;
+  optional CSData pressedData = 30;
+  optional CSData disbledData = 31;
+  optional float capInsetsHeight = 32;
+  optional float capInsetsWidth = 33;
+  optional float capInsetsX = 34;
+  optional float capInsetsY = 35;
+  optional float scale9Width = 36;
+  optional float scale9Height = 37;
+  optional int32 textColorR = 38;
+  optional int32 textColorG = 39;
+  optional int32 textColorB = 40;
+  optional int32 fontSize = 41;
+  optional string fontName = 42;
+  optional CSData backGroundBoxData = 43;
+  optional CSData backGroundBoxSelectedData = 44;
+  optional CSData frontCrossData = 45;
+  optional CSData backGroundBoxDisabledData = 46;
+  optional CSData frontCrossDisabledData = 47;
+  optional CSData fileNameData = 48;
+  optional bool touchScaleEnable = 49;
+  optional float areaWidth = 50;
+  optional float areaHeight = 51;
+  optional int32 hAlignment = 52;
+  optional int32 vAlignment = 53;
+  optional CSData charMapFileData = 54;
+  optional string stringValue = 55;
+  optional string charMapFile = 56;
+  optional int32 itemWidth = 57;
+  optional int32 itemHeight = 58;
+  optional string startCharMap = 59;
+  optional bool clipAble = 60;
+  optional bool backGroundScale9Enable = 61;
+  optional int32 bgColorR = 62;
+  optional int32 bgColorG = 63;
+  optional int32 bgColorB = 64;
+  optional int32 bgStartColorR = 65;
+  optional int32 bgStartColorG = 66;
+  optional int32 bgStartColorB = 67;
+  optional int32 bgEndColorR = 68;
+  optional int32 bgEndColorG = 69;
+  optional int32 bgEndColorB = 70;
+  optional float vectorx = 71;
+  optional float vectory = 72;
+  optional int32 bgColorOpacity = 73;
+  optional int32 colorType = 74;
+  optional CSData backGroundImageData = 75;
+  optional int32 layoutType = 76;
+  optional float innerWidth = 77;
+  optional float innerHeight = 78;
+  optional float direction = 79;
+  optional bool bounceEnable = 80;
+  optional bool barTextureScale9Enable = 81;
+  optional float length = 82;
+  optional string barFileName = 83;
+  optional CSData barFileNameData = 84;
+  optional CSData ballNormalData = 85;
+  optional CSData ballPressedData = 86;
+  optional CSData ballDisabledData = 87;
+  optional int32 percent = 88;
+  optional CSData progressBarData = 89;
+  optional string placeHolder = 90;
+  optional float touchSizeWidth = 91;
+  optional float touchSizeHeight = 92;
+  optional float width = 93;
+  optional float height = 94;
+  optional bool maxLengthEnable = 95;
+  optional int32 maxLength = 96;
+  optional bool passwordEnable = 97;
+  optional string passwordStyleText = 98;
+  optional CSData textureData = 99;
+  optional string text = 100;
+  optional bool adaptScreen = 101;
+  optional float gravity = 102;
+  optional float itemMargin = 103;
+  optional bool editorClipAble = 104;
+}
+
+message CSWidget {
+  optional string classname = 1;
+  repeated CSWidget children = 3;
+  optional CSOptions options = 4;
+}
+
+message CSGUIRoot {
+  optional string version = 1;
+  optional float designHeight = 2;
+  optional float designWidth = 3;
+  repeated string textures = 4;
+  optional CSWidget widgetTree = 5;
+  optional CSAnimation animation = 6;
+}

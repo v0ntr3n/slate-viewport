@@ -1,0 +1,29 @@
+syntax = "proto2";
+// Extracted from libcocos2dlua.so @ 0xa9f668 (417 bytes)
+
+message CSSceneData {
+  optional int32 resourcetype = 1;
+  optional string path = 2;
+  optional string plist = 3;
+}
+
+message CSComponent {
+  optional string classname = 1;
+  optional string name = 2;
+  optional CSSceneData fileData = 3;
+  optional string selectedactionname = 4;
+}
+
+message CSSceneRoot {
+  optional string classname = 1;
+  optional int32 x = 2;
+  optional int32 y = 3;
+  optional bool visible = 4;
+  optional int32 objecttag = 5;
+  optional int32 zorder = 6;
+  optional float scalex = 7;
+  optional float scaley = 8;
+  optional int32 rotation = 9;
+  repeated CSComponent components = 10;
+  repeated CSSceneRoot gameobjects = 11;
+}
